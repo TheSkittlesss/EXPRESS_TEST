@@ -20,6 +20,23 @@ router.post("/balance/:id", (req, res) => {
         console.log(`Возникла ошибка!`); 
       }  
     });
+
+
+
+    router.post("/send/:id", (req, res) => {
+
+      try{
+          let send = BTC_Services.SendTransaction(req.params.id)
+          send.then(function(result){
+                  req.body = result
+                  //console.log(result.balance)
+                  res.status(200).json({ status: "Success !", data: { body: 
+                      req.body } }); 
+          })
+      } catch(err) {
+          console.log(`Возникла ошибка!`); 
+        }  
+      });
 module.exports = router;
 
 
