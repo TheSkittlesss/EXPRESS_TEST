@@ -1,5 +1,10 @@
-import { Controller, Param, Post } from '@nestjs/common';
 import { providers as _providers, Wallet, utils } from 'ethers';
+import { DataSource } from 'typeorm';
+import { LOG } from '../blockchain.entity';
+/*import { LOGProviders } from '../blockchain.providers';
+import { LOGService } from '../blockchain.service';
+import { DatabaseModule } from 'src/Postgres/pg.module';
+import { databaseProviders } from 'src/Postgres/pg.providers';*/
 const providers = _providers;
 const provider = providers.getDefaultProvider('ropsten');
 const amount = '0.01';
@@ -7,8 +12,17 @@ const amount = '0.01';
 const acc2 = '0x293Ccd45836e66e33724feE6255F35e3deC0496C'; // sender
 const pk2 = 'a2db663ba010a7bc9bd3ee31361db60dc2930cdc70c605ea49952ddcf796d1fd'; // sender PK
 const wallet = new Wallet(pk2, provider);
-
-async function SendTransaction(acc1) {
+const dataSource = new DataSource({
+  type: 'postgres',
+  host: 'localhost',
+  port: 5432,
+  username: 'postgres',
+  password: 'P@ssw0rd',
+  database: 'new-task',
+  entities: [LOG],
+});
+dataSource.initialize();
+export async function SendTransaction(acc1) {
   const senderBalanseBefore = utils.formatEther(
     await provider.getBalance(acc2),
   );
@@ -46,6 +60,21 @@ async function SendTransaction(acc1) {
       await provider.getBalance(acc1),
     );
     console.log('Receiver balanse after: ' + receiverBalanseAfter);
+    dataSource
+      .createQueryBuilder()
+      .insert()
+      .into('log')
+      .values([
+        {
+          hex: sendTransactionPromise.hash,
+          type: 'ETH',
+          sender: acc2,
+          receiver: acc1,
+          amount: amount,
+          status: 'Mined',
+        },
+      ])
+      .execute();
     return {
       Transaction: sendTransactionPromise.hash,
       SBB: senderBalanseBefore,
@@ -57,12 +86,15 @@ async function SendTransaction(acc1) {
     console.log('Недостаточно средств');
   }
 }
+export function getWalletBalance(address) {
+  try {
+    return provider.getBalance(address).then(function (balance) {
+      const etherString = utils.formatEther(balance);
+      //const dataSource = DataSource.getRepository(LOG);
 
-@Controller('eth/send')
-export class EthSendController {
-  @Post(':id')
-  EthBalance(@Param() params) {
-    const send = SendTransaction(params.id);
-    return send;
+      return { balance: etherString };
+    });
+  } catch (err) {
+    console.log('Возникла ошибка!');
   }
 }

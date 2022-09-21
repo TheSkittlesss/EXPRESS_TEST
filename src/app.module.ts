@@ -1,13 +1,24 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { EthbalanceController } from './eth/balance/balance.controller';
-import { BtcbalanceController } from './btc/balance/balance.controller';
-import { EthSendController } from './eth/send/send.controller';
-import { BtcSendController } from './btc/send/send.controller';
+import {
+  EthbalanceController,
+  EthSendController,
+} from './blockchain/eth/eth.controller';
+import {
+  BtcbalanceController,
+  BtcSendController,
+} from './blockchain/btc/btc.controller';
+import { ConfigModule } from '@nestjs/config';
+import { DatabaseModule } from './Postgres/pg.module';
+import { LOGProviders } from './blockchain/blockchain.providers';
+import { LOGService } from './blockchain/blockchain.service';
 
 @Module({
-  imports: [],
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true, envFilePath: './.env' }),
+    DatabaseModule,
+  ],
   controllers: [
     AppController,
     EthbalanceController,
@@ -15,6 +26,6 @@ import { BtcSendController } from './btc/send/send.controller';
     EthSendController,
     BtcSendController,
   ],
-  providers: [AppService],
+  providers: [AppService, ...LOGProviders, LOGService],
 })
 export class AppModule {}
